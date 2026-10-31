@@ -151,3 +151,54 @@ that produces the tool's dump format.
   not the StaleNaN bit pattern, so a backfill cannot end a series the way a
   live scrape or Grafana's remote write does. The tool writes an explicit `0`
   sample at the exact end of each interval instead (see design.md).
+
+## 5. State mapping used by the converter (confirmed from source)
+
+Annotation `newState` is "State" or "State (Reason)". The reason in
+parentheses (for example `Alerting (NoData)`, `Normal (MissingSeries)`) is
+stripped; the base state decides the series.
+
+| Annotation base state | `alertstate` | `grafana_alertstate` | Series emitted |
+|---|---|---|---|
+| Alerting | firing | alerting | yes |
+| Pending | pending | pending | yes |
+| NoData | firing | nodata | yes |
+| Error | firing | error | yes |
+| Recovering | firing | recovering | yes |
+| Normal | none | none | no (ends the open interval) |
+
+Source refs (Grafana v12.1.1 `pkg/services/ngalert/state/historian/prometheus.go`):
+the allowed state set including `eval.Recovering` is at line 44, and the
+`firing` choice for Recovering, Alerting, Error, NoData is at line 58. In
+v12.0.0 `Recovering` is the `keep_firing_for` period
+(`pkg/services/ngalert/state/state.go:173-175` `SetRecovering`,
+`:335-373` transition logic, `manager.go:512` `InstanceStateRecovering`).
+An alert in Recovering is still firing from the outside, so it is mapped to
+`alertstate="firing"`. The real data contains Recovering rows and the
+mapping verified 672,028 of 672,028 events.
+
+### 5.1 Empty label values
+
+Prometheus drops labels whose value is empty. 19 instances in the real data
+had an empty-string label value. The converter drops them too (counted as
+`empty_label_values_dropped`), otherwise verify reports the same series as
+both missing and unexpected (this happened in the first real run: 14 and 14).
+
+### 5.2 Rows that do not chain
+
+5,790 rows have a `prevState` that does not equal the previous row's
+`newState` for the same instance. Grafana does not record every transition
+(for example KeepLast, MissingSeries clean-up). The converter uses `newState`
+only, so these are tolerated. 65 groups of events share the same millisecond
+and are resolved in file order.
+
+### 5.3 Deleted rules
+
+Grafana writes no history row when a rule is deleted. An instance that was
+Alerting at deletion would stay open until the end of the export. The
+converter takes the rule list from `alerting/rules/**/*.json` (88 rules);
+an alertId not in that list is treated as deleted and its open interval is
+cut at that rule's newest annotation (`--deleted-rule-end last-event`).
+In the real data 5,328 instances belong to deleted rules and 116 open
+intervals were cut. This is a heuristic: the real deletion time is unknown.
+Use `--deleted-rule-end export` for the old behaviour.

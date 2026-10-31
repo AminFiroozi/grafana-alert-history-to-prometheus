@@ -62,3 +62,11 @@
   a tight limit that costs many calls (lab: 49 calls for 183 rows at limit 50, 1
   call at the default 5000). Set `--from` near the real start of history for
   big exports.
+
+## Added after the real data run
+
+- Deleted rules: end time of open intervals is an estimate (last event).
+- Empty label values are dropped (Prometheus does the same).
+- 1m step: state changes shorter than the step inside one minute are
+  represented by their first and last sample times only.
+- Convert needs about 1.2 GB RAM and 30 GB temporary disk for 625k rows.

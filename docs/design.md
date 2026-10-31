@@ -144,3 +144,25 @@ both periods:
 Until the upgrade, ongoing history can be captured by re-running export,
 convert and backfill on a schedule (for example daily, with a window that
 overlaps the previous run by at least the longest open interval).
+
+## State mapping
+
+See research.md section 5. Base state only (reason stripped). Normal ends the
+interval. Recovering is `alertstate="firing"`, `grafana_alertstate="recovering"`.
+Empty label values are dropped. `--deleted-rule-end last-event` caps open
+intervals of rules missing from the rule map.
+
+## Volume decisions (real data)
+
+- 625,038 annotations, 672,028 events, 336,096 intervals, 9,788 series.
+- Step 1m (1m gives 90,492,858 samples; the 15s default would give roughly 4 times more, not generated). `convert` warns for steps of 5m or more because Prometheus
+  lookback is 5m and short intervals would disappear. Verify matched all 672,028 events at 1m, so no start or end was lost in this data.
+- OpenMetrics is 29.26 GB in total. promtool re-parses its input once per
+  block window, so `--split` writes one file per 20.25 day window (16 files)
+  and promtool runs on them in parallel (`-P 4`). Convert streams per series
+  (peak RSS 1.2 GB).
+- `--max-block-duration=486h` gives 16 blocks of 3.5 to 6.1 MB each,
+  57,564,965 bytes in total, 55.3 MB on disk after load.
+- Retention is relative to the newest block, not to now. With 400d the
+  oldest row (2025-12-10) stays until the newest block passes 2027-01-14.
+  The PVC is 20Gi.

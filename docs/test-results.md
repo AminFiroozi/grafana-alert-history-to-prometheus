@@ -57,3 +57,28 @@ annotations (Alerting 25, Pending 73, Normal 83, NoData 1, Error 1).
 - Rollback with `delete_series`.
 - Prometheus 2.x as env2.
 - Volume: the lab had 445 annotations; production row counts are unknown.
+
+## Part 2: real data run (2026-10-31)
+
+Input: git-synced alert history, 324 day files, 625,038 rows, 154 alertIds,
+2025-12-10 to 2026-10-29. Target: new Prometheus v3.5.0 in kind cluster
+`ahpractice`, retention 400d.
+
+| Phase | Result | Time |
+|---|---|---|
+| reset env2 (delete StatefulSet and PVC, reapply) | clean | 36 s |
+| git adapter (`gitsync_to_dump.py`) | 625,038 rows, 0 duplicate ids (identical 0, conflicting 0), 0 without id, dump 336,587,431 bytes, peak RSS 900 MB | 10.3 s |
+| convert (`--step 1m --split --deleted-rule-end last-event`) | 11,836 instances, 336,096 intervals (164 open), 9,788 series, 90,492,858 samples, 16 files, 29,263,198,909 bytes, peak RSS 1.2 GB | 441 s |
+| promtool create-blocks-from (`-P 4`, 486h) | 16 blocks, 57,564,965 bytes | 139 s (first run) |
+| kubectl cp to `.tmp-for-creation` name, then mv | ok | 1 to 2 s |
+| Prometheus reload | `blocks_loaded` 16 after 71 s, 0 reload failures, 0 retention deletions, 0 warn/error log lines, lowest timestamp 1765351300 (2025-12-10T07:21:40Z) | 71 s |
+| verify | 672,028 source events, 672,028 matched, **0 missing, 0 unexpected**, 90,492,858 samples read | 80 s |
+| spot check, 3 alerts | 61/61, 30/30, 81/81 transitions match (instant query `== 1` at t-1ms and t) | seconds |
+
+Run 1 (before the empty label fix) gave 14 missing and 14 extra; cause in
+research.md 5.1. The dashboard `alert-history-backfill` and the datasource
+`env2prom` were provisioned and answer queries. Raw logs are kept outside
+the repo (`work/`, ignored).
+
+Not done: a second identical import on the real data (idempotency was shown
+in lab test 10 only).

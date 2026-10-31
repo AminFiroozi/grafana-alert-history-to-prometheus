@@ -35,8 +35,9 @@ running the runbook.
 ## Design points with some uncertainty
 
 10. **Recovering state.** Mapped to `alertstate="firing"`,
-    `grafana_alertstate="recovering"` like Grafana 12.1's backend, but no lab
-    rule produced it (needs `keep_firing_for`).
+    `grafana_alertstate="recovering"` like Grafana 12.1's backend, and now
+    confirmed from the v12.0.0 and v12.1.1 source (research.md 5). The real
+    data contains Recovering rows and verified exactly.
 11. **Label value edge case** (`", k="` inside a value) is detected, not
     handled. Unknown whether production labels ever contain this.
 12. **Same-millisecond conflicts** (one series ending and starting again at the
@@ -47,3 +48,15 @@ running the runbook.
     earlier lab on this machine (12.2) and from `datasourcewriter.go`; not
     re-run here.
 14. **Rollback via `delete_series`** not exercised.
+
+## Added after the real data run
+
+14. **Deleted rules.** Open intervals of rules missing from the rule files are
+    cut at the rule's newest annotation. The real deletion time is unknown;
+    "exa table space [day]" (rule id 61, deleted 2026-09-22) is the longest
+    case. Needs a decision whether last-event is acceptable.
+15. **5,790 prevState chain breaks** are tolerated; the cause (unrecorded
+    transitions) is inferred, not proven for each row.
+16. **Retention horizon.** Old data is safe only while the newest block is
+    before 2027-01-14 with 400d retention; raise retention or size limit
+    before that.
