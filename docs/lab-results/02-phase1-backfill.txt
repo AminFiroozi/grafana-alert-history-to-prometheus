@@ -1,0 +1,14 @@
+$ lab/backfill.sh lab-results/history-1.om lab-results/blocks-1
+BLOCK ULID                  MIN TIME       MAX TIME       DURATION     NUM SAMPLES  NUM CHUNKS   NUM SERIES   SIZE
+01M68F9AJ9921VGVZ24FZKRD9D  1793432340000  1793433300001  16m0.001s    427          9            9            3977
+blocks on disk before=0, copied=1
+t+5s prometheus_tsdb_blocks_loaded=0
+t+10s prometheus_tsdb_blocks_loaded=0
+t+15s prometheus_tsdb_blocks_loaded=0
+t+20s prometheus_tsdb_blocks_loaded=0
+t+25s prometheus_tsdb_blocks_loaded=0
+t+30s prometheus_tsdb_blocks_loaded=0
+t+35s prometheus_tsdb_blocks_loaded=0
+t+40s prometheus_tsdb_blocks_loaded=0
+t+45s prometheus_tsdb_blocks_loaded=0
+t+50s prometheus_tsdb_blocks_loaded=1

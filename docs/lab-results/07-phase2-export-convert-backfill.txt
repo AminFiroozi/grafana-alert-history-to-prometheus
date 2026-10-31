@@ -1,0 +1,40 @@
+Sat Oct 31 07:57:59 AM UTC 2026
+$ python3 tool/gah2prom.py export --url http://localhost:23000 --user admin --password *** -o lab-results/dump-2.json   # full history incl. backdated rows
+rules: 4
+annotations: 445 rows in 1 API calls
+wrote lab-results/dump-2.json: 445 annotations, range 1970-01-01T00:00:01.000Z .. 2026-10-31T07:57:59.091Z
+$ python3 tool/gah2prom.py convert -i lab-results/dump-2.json -o lab-results/history-2.om
+{"annotations": 445, "instances": 6, "intervals": 238, "intervals_open": 3, "samples": 29519, "series": 9}
+wrote lab-results/history-2.om: 9 series, 29519 samples, 2026-10-30T01:39:00.000Z .. 2026-10-31T07:57:59.091Z
+$ lab/backfill.sh lab-results/history-2.om lab-results/blocks-2
+BLOCK ULID                  MIN TIME       MAX TIME       DURATION     NUM SAMPLES  NUM CHUNKS   NUM SERIES   SIZE
+01M68FEAB4NNAAXYRCASFX3AN2  1793324340000  1793325585001  20m45.001s   441          9            9            3682
+01M68FEACAV1NS05M21XQJP00V  1793325600000  1793332785001  1h59m45.001s  1920         16           4            3253
+01M68FEAE02ZYZGGG6SM5SSDST  1793332800000  1793339985001  1h59m45.001s  1920         16           4            3253
+01M68FEAFFHF5WCH0SXN9NPBB7  1793340000000  1793347185001  1h59m45.001s  1920         16           4            3253
+01M68FEAGRH12Z8GP2G491JB3E  1793347200000  1793354385001  1h59m45.001s  1920         16           4            3253
+01M68FEAHYXJ4B416G50HZZ7H3  1793354400000  1793361585001  1h59m45.001s  1920         16           4            3253
+01M68FEAK60JMDQMNRANZFF7YB  1793361600000  1793368785001  1h59m45.001s  1920         16           4            3253
+01M68FEAMF9WP7FAB1J50EDDZK  1793368800000  1793375985001  1h59m45.001s  1920         16           4            3253
+01M68FEANPFDDY0C59MD0VHWWF  1793376000000  1793383185001  1h59m45.001s  1920         16           4            3253
+01M68FEAPXQT0W3DMDQ9PTQAR2  1793383200000  1793390385001  1h59m45.001s  1920         16           4            3253
+01M68FEAR612H5TFYV7APT82RT  1793390400000  1793397585001  1h59m45.001s  1920         16           4            3253
+01M68FEASGWE0Y5G8Y9YWE553G  1793397600000  1793404785001  1h59m45.001s  1920         16           4            3253
+01M68FEATTJQ93RAS0V55GFZW8  1793404800000  1793411985001  1h59m45.001s  2026         21           9            4456
+01M68FEAW1T9HSZYX833KRQVYR  1793412000000  1793419185001  1h59m45.001s  1920         16           4            3253
+01M68FEAXFS63S3RM1WHGP91YC  1793419200000  1793426385001  1h59m45.001s  1920         16           4            3253
+01M68FEB01MJ3ZMEDDXJ1FE15H  1793426400000  1793433470001  1h57m50.001s  2092         21           9            4928
+blocks on disk before=1, copied=16
+t+5s prometheus_tsdb_blocks_loaded=1
+t+10s prometheus_tsdb_blocks_loaded=1
+t+15s prometheus_tsdb_blocks_loaded=1
+t+20s prometheus_tsdb_blocks_loaded=1
+t+25s prometheus_tsdb_blocks_loaded=1
+t+30s prometheus_tsdb_blocks_loaded=1
+t+35s prometheus_tsdb_blocks_loaded=1
+t+40s prometheus_tsdb_blocks_loaded=1
+t+45s prometheus_tsdb_blocks_loaded=1
+t+50s prometheus_tsdb_blocks_loaded=1
+t+55s prometheus_tsdb_blocks_loaded=1
+t+60s prometheus_tsdb_blocks_loaded=1
+t+65s prometheus_tsdb_blocks_loaded=6

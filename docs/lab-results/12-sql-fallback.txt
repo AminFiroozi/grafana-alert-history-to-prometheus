@@ -1,0 +1,8 @@
+# SQL fallback path, checked against the API path (dump-2, to=1793433479091)
+sqlite query returned 445 rows
+$ python3 tool/csv_to_dump.py ann.csv --from 1 --to <dump-2 to> -o dump-2-sql.json
+wrote <scratch>/dump-2-sql.json: 445 annotations, 4 rules
+wrote <scratch>/history-2-sql.om: 9 series, 29519 samples, 2026-10-30T01:39:00.000Z .. 2026-10-31T07:57:59.091Z
+$ sha256sum history-2.om (API path) history-2-sql.om (SQL path)
+3636b267eb41407f02a4e74589dc7184a397ef8a4e163fe6603ae4d5e831ce73
+3636b267eb41407f02a4e74589dc7184a397ef8a4e163fe6603ae4d5e831ce73

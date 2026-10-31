@@ -1,0 +1,22 @@
+$ curl -s -u admin:*** "localhost:23000/api/annotations?type=alert&limit=5000" | jq ...   # raw count per newState
+total=183
+Alerting 25
+Error 1
+NoData 1
+Normal 83
+Pending 73
+
+$ python3 tool/gah2prom.py export --url http://localhost:23000 --user admin --password *** --limit 50 -o lab-results/dump-1.json   # small limit on purpose: forces window splitting
+rules: 4
+annotations: 183 rows in 49 API calls
+wrote lab-results/dump-1.json: 183 annotations, range 1970-01-01T00:00:01.000Z .. 2026-10-31T07:55:10.435Z
+
+$ python3 tool/gah2prom.py convert -i lab-results/dump-1.json -o lab-results/history-1.om
+{"annotations": 183, "instances": 6, "intervals": 100, "intervals_open": 2, "samples": 427, "series": 9}
+wrote lab-results/history-1.om: 9 series, 427 samples, 2026-10-31T07:39:00.000Z .. 2026-10-31T07:55:10.435Z
+
+$ head -4 lab-results/history-1.om
+# HELP ALERTS_HISTORY Grafana alert state history backfilled from annotations (1 = in state, 0 = end marker)
+# TYPE ALERTS_HISTORY gauge
+ALERTS_HISTORY{alertname="Lab Error",alertstate="firing",grafana_alertstate="error",grafana_folder="Lab",grafana_rule_uid="lab-error",source="grafana-env1"} 1 1793432340.000
+ALERTS_HISTORY{alertname="Lab Error",alertstate="firing",grafana_alertstate="error",grafana_folder="Lab",grafana_rule_uid="lab-error",source="grafana-env1"} 1 1793432355.000

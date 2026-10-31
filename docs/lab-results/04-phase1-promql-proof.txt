@@ -1,0 +1,46 @@
+## Source: first Lab Pulse transitions in dump-1
+{"time":1793432340000,"prevState":"Normal","newState":"Alerting"}
+{"time":1793432370000,"prevState":"Alerting","newState":"Normal"}
+{"time":1793432410000,"prevState":"Normal","newState":"Alerting"}
+## Point-in-time checks around the first Lab Pulse alerting interval [1793432340.000, 1793432370.000)
+$ promql @ 1793432339.999: ALERTS_HISTORY{alertname="Lab Pulse"}
+
+$ promql @ 1793432339.999: ALERTS_HISTORY{alertname="Lab Pulse"} == 1
+
+$ promql @ 1793432340: ALERTS_HISTORY{alertname="Lab Pulse"}
+[{"alertname":"Lab Pulse","alertstate":"firing","grafana_alertstate":"alerting","grafana_rule_uid":"lab-pulse"},[1793432340,"1"]]
+
+$ promql @ 1793432340: ALERTS_HISTORY{alertname="Lab Pulse"} == 1
+[{"alertname":"Lab Pulse","alertstate":"firing","grafana_alertstate":"alerting","grafana_rule_uid":"lab-pulse"},[1793432340,"1"]]
+
+$ promql @ 1793432369.999: ALERTS_HISTORY{alertname="Lab Pulse"}
+[{"alertname":"Lab Pulse","alertstate":"firing","grafana_alertstate":"alerting","grafana_rule_uid":"lab-pulse"},[1793432369.999,"1"]]
+
+$ promql @ 1793432369.999: ALERTS_HISTORY{alertname="Lab Pulse"} == 1
+[{"alertname":"Lab Pulse","alertstate":"firing","grafana_alertstate":"alerting","grafana_rule_uid":"lab-pulse"},[1793432369.999,"1"]]
+
+$ promql @ 1793432370: ALERTS_HISTORY{alertname="Lab Pulse"}
+[{"alertname":"Lab Pulse","alertstate":"firing","grafana_alertstate":"alerting","grafana_rule_uid":"lab-pulse"},[1793432370,"0"]]
+
+$ promql @ 1793432370: ALERTS_HISTORY{alertname="Lab Pulse"} == 1
+
+## Series count by state (last_over_time over the lab hour)
+$ promql @ 1793433310: count by (alertname, grafana_alertstate) (last_over_time(ALERTS_HISTORY{source="grafana-env1"}[1h]))
+[{"alertname":"Lab Error","grafana_alertstate":"error"},[1793433310,"1"]]
+[{"alertname":"Lab NoData","grafana_alertstate":"nodata"},[1793433310,"1"]]
+[{"alertname":"Lab Pulse","grafana_alertstate":"alerting"},[1793433310,"1"]]
+[{"alertname":"Lab Walk Multi","grafana_alertstate":"alerting"},[1793433310,"3"]]
+[{"alertname":"Lab Walk Multi","grafana_alertstate":"pending"},[1793433310,"3"]]
+
+$ promql @ 1793433310: count(last_over_time(ALERTS_HISTORY{source="grafana-env1"}[1h]))
+[{},[1793433310,"9"]]
+
+## Open intervals at export time (no end marker): what is firing at the export instant
+$ promql @ 1793433300: ALERTS_HISTORY{source="grafana-env1"} == 1
+[{"alertname":"Lab Error","alertstate":"firing","grafana_alertstate":"error","grafana_rule_uid":"lab-error"},[1793433300,"1"]]
+[{"alertname":"Lab NoData","alertstate":"firing","datasource_uid":"testdata","grafana_alertstate":"nodata","grafana_rule_uid":"lab-nodata","ref_id":"A"},[1793433300,"1"]]
+
+## Number of alerting intervals of Lab Pulse (count of 0->1 / start edges, via resets of a cumulative helper is not possible; use changes on the raw series)
+$ promql @ 1793433310: changes(ALERTS_HISTORY{alertname="Lab Pulse"}[1h])
+[{"alertname":"Lab Pulse","alertstate":"firing","grafana_alertstate":"alerting","grafana_rule_uid":"lab-pulse"},[1793433310,"19"]]
+

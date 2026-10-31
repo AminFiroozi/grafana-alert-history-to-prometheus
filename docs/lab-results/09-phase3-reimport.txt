@@ -1,0 +1,54 @@
+$ docker exec ahlab-env2-prometheus-1 promtool tsdb list /prometheus   # after phase 2 (incl. compaction)
+BLOCK ULID                  MIN TIME       MAX TIME       DURATION       NUM SAMPLES  NUM CHUNKS   NUM SERIES   SIZE
+01M68FFVBSCMJD3RFPAGAFCYQW  1793324340000  1793339985001  4h20m45.001s   4281         41           9            6025
+01M68FFVEFYKKT823QCBVV21PS  1793340000000  1793404785001  17h59m45.001s  17280        144          4            11554
+01M68FEATTJQ93RAS0V55GFZW8  1793404800000  1793411985001  1h59m45.001s   2026         21           9            4456
+01M68FEAW1T9HSZYX833KRQVYR  1793412000000  1793419185001  1h59m45.001s   1920         16           4            3253
+01M68FEAXFS63S3RM1WHGP91YC  1793419200000  1793426385001  1h59m45.001s   1920         16           4            3253
+01M68FFVAPPYH9WSZ3N4WVW08J  1793426400000  1793433470001  1h57m50.001s   2092         21           9            5204
+
+# Phase 3: re-import. Re-run convert on the same dump (must be byte-identical), build NEW blocks (new ULIDs), copy again.
+wrote lab-results/history-2-rerun.om: 9 series, 29519 samples, 2026-10-30T01:39:00.000Z .. 2026-10-31T07:57:59.091Z
+$ sha256sum history-2.om history-2-rerun.om
+3636b267eb41407f02a4e74589dc7184a397ef8a4e163fe6603ae4d5e831ce73  history-2.om
+3636b267eb41407f02a4e74589dc7184a397ef8a4e163fe6603ae4d5e831ce73  history-2-rerun.om
+blocks on disk before=6, copied=16
+t+5s prometheus_tsdb_blocks_loaded=6
+t+10s prometheus_tsdb_blocks_loaded=6
+t+15s prometheus_tsdb_blocks_loaded=6
+t+20s prometheus_tsdb_blocks_loaded=6
+t+25s prometheus_tsdb_blocks_loaded=6
+t+30s prometheus_tsdb_blocks_loaded=6
+t+35s prometheus_tsdb_blocks_loaded=6
+t+40s prometheus_tsdb_blocks_loaded=6
+t+45s prometheus_tsdb_blocks_loaded=6
+t+50s prometheus_tsdb_blocks_loaded=6
+t+55s prometheus_tsdb_blocks_loaded=6
+t+60s prometheus_tsdb_blocks_loaded=6
+t+65s prometheus_tsdb_blocks_loaded=6
+$ docker exec ahlab-env2-prometheus-1 promtool tsdb list /prometheus   # after re-import + reload
+BLOCK ULID                  MIN TIME       MAX TIME       DURATION       NUM SAMPLES  NUM CHUNKS   NUM SERIES   SIZE
+01M68FKGNEK19R07KYYJ8KKWD7  1793324340000  1793339985001  4h20m45.001s   4281         41           9            6236
+01M68FKGQE427MD7XVSSAFT8DH  1793340000000  1793404785001  17h59m45.001s  17280        144          4            12635
+01M68FKGRPRST1SM16JP38XA44  1793404800000  1793411985001  1h59m45.001s   2026         21           9            4732
+01M68FKGSDV3EVEF1DMHHV8GWV  1793412000000  1793419185001  1h59m45.001s   1920         16           4            3529
+01M68FKGTB82NRZKK3RQ9PG59G  1793419200000  1793426385001  1h59m45.001s   1920         16           4            3529
+01M68FKGVF3NWTA858P5T8CHHF  1793426400000  1793433470001  1h57m50.001s   2092         21           9            5237
+"vertical_compactions_total=7"
+$ python3 tool/gah2prom.py verify -i lab-results/dump-2.json --prometheus http://localhost:29090
+{
+ "source_annotations": 445,
+ "source_events": 473,
+ "source_interval_starts": 238,
+ "source_interval_ends": 235,
+ "source_leading_starts_at_from": 0,
+ "prometheus_series": 9,
+ "prometheus_samples_read": 29519,
+ "reconstructed_events": 473,
+ "matched": 473,
+ "missing_in_prometheus": 0,
+ "unexpected_in_prometheus": 0
+}
+exit=0
+$ promql: sum(count_over_time(ALERTS_HISTORY{source="grafana-env1"}[2d])) @ export time   # raw sample count, must equal convert "samples"
+[1793433480.091,"29519"]

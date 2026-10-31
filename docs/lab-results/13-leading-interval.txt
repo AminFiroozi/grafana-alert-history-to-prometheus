@@ -1,0 +1,32 @@
+# Leading-interval check (convert only, not imported): partial export starting mid-history
+rules: 4
+annotations: 148 rows in 1 API calls
+wrote <scratch>/dump-partial.json: 148 annotations, range 2026-10-31T07:45:00.000Z .. 2026-10-31T07:57:59.091Z
+# instances whose first event in the window has a non-Normal prevState:
+  1793432700000 Alerting -> Normal Lab Walk Multi {alertname=Lab Walk Multi, env=lab, grafana_folder=Lab, host=h2, severity=critical, team=sre}
+oldest annotation in window: 1793432700000
+{"annotations": 148, "instances": 4, "intervals": 82, "intervals_open": 1, "samples": 249, "series": 7}
+wrote <scratch>/partial.om: 7 series, 249 samples, 2026-10-31T07:45:00.000Z .. 2026-10-31T07:57:59.091Z
+# first sample per series (leading intervals start at the oldest annotation in the window, not at --from):
+  1793432710.000  1  alertname="Lab Pulse",alertstate="firing",grafana_alertstate
+  1793432810.000  1  alertname="Lab Walk Multi",alertstate="firing",env="lab",gra
+  1793432900.000  1  alertname="Lab Walk Multi",alertstate="firing",env="lab",gra
+  1793432700.000  1  alertname="Lab Walk Multi",alertstate="firing",env="lab",gra
+  1793432740.000  1  alertname="Lab Walk Multi",alertstate="pending",env="lab",gr
+  1793432710.000  1  alertname="Lab Walk Multi",alertstate="pending",env="lab",gr
+  1793432720.000  1  alertname="Lab Walk Multi",alertstate="pending",env="lab",gr
+{"annotations": 148, "instances": 4, "intervals": 81, "intervals_open": 1, "samples": 248, "series": 7}
+wrote <scratch>/partial-noleading.om: 7 series, 248 samples, 2026-10-31T07:45:10.000Z .. 2026-10-31T07:57:59.091Z
+
+# BUG found by this check: the h2 instance got a 1 sample at 1793432700000 although its first event there is Alerting -> Normal
+# (zero-length leading interval [1793432700000, 1793432700000); the "start wins" rule kept the 1). Fixed in intervals_for(): empty intervals dropped. Re-run:
+{"annotations": 148, "instances": 4, "intervals": 81, "intervals_open": 1, "samples": 248, "series": 7}
+wrote <scratch>/partial.om: 7 series, 248 samples, 2026-10-31T07:45:10.000Z .. 2026-10-31T07:57:59.091Z
+samples at 1793432700.000 with value 1 after fix: 0
+# Regression: full-history results unchanged after the fix
+wrote <scratch>/h2-fixed.om: 9 series, 29519 samples, 2026-10-30T01:39:00.000Z .. 2026-10-31T07:57:59.091Z
+3636b267eb41407f02a4e74589dc7184a397ef8a4e163fe6603ae4d5e831ce73
+3636b267eb41407f02a4e74589dc7184a397ef8a4e163fe6603ae4d5e831ce73
+ "matched": 473,
+ "missing_in_prometheus": 0,
+ "unexpected_in_prometheus": 0

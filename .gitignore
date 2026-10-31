@@ -1,0 +1,15 @@
+# Real alert history and everything derived from it stays out of git:
+# dumps, OpenMetrics files and TSDB blocks contain internal rule names, URIs and service names.
+work/
+*.om
+*.jsonl
+dump*.json
+blocks/
+lab-results/*.json
+lab-results/*.om
+# local cluster credentials
+kubeconfig
+practice/kubeconfig
+# python
+__pycache__/
+*.pyc

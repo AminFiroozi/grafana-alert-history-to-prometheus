@@ -1,0 +1,11 @@
+apiVersion: 1
+datasources:
+  - name: env2-prometheus
+    type: prometheus
+    uid: env2prom
+    access: proxy
+    url: http://env2-prometheus:9090
+    isDefault: true
+    jsonData:
+      # Required: without it Grafana 12.1 assumes Mimir and posts to /api/v1/push (404 on Prometheus)
+      prometheusType: Prometheus

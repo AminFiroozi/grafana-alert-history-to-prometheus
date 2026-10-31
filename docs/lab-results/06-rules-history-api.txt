@@ -1,0 +1,4 @@
+$ curl -s -u admin:*** "localhost:23000/api/v1/rules/history?ruleUID=lab-pulse&from=<lab start>&to=now"  # annotations backend, first 2 rows
+{"schema":["time","text","prev","next","data"],"time":[1793433410000000,1793433370000000],"next":["Alerting","Normal"]}
+# compare /api/annotations for the same rule (ms epoch):
+[{"time":1793433410000,"newState":"Alerting"},{"time":1793433370000,"newState":"Normal"}]

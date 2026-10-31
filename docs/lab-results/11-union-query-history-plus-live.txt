@@ -1,0 +1,4 @@
+# Same deterministic rule (Lab Pulse, predictable_pulse 60s on / 40s off) in env1 12.0.0 (backfilled ALERTS_HISTORY) and env2 12.1.1 (live GRAFANA_ALERTS via the prometheus backend).
+$ promql (range, step 10s, 07:50:00..07:57:50): {__name__=~"ALERTS_HISTORY|GRAFANA_ALERTS", alertname="Lab Pulse"} == 1
+ALERTS_HISTORY firing windows (10s grid): [(5010, 5100), (5150, 5240), (5330, 5420), (5510, 5600), (5650, 5740)] (mmss within hour)
+GRAFANA_ALERTS firing windows (10s grid): [(5010, 5100), (5150, 5240), (5330, 5420), (5510, 5600), (5650, 5740)] (mmss within hour)

@@ -1,0 +1,322 @@
+{
+ "uid": "alert-history-backfill",
+ "title": "Alert state history (backfilled)",
+ "editable": true,
+ "schemaVersion": 41,
+ "version": 1,
+ "tags": [
+  "alert-history"
+ ],
+ "timezone": "utc",
+ "time": {
+  "from": "2025-12-01T00:00:00.000Z",
+  "to": "2026-11-01T00:00:00.000Z"
+ },
+ "description": "ALERTS_HISTORY backfilled from Grafana annotations. Every query keeps the == 1 filter: each interval ends with a 0 sample because promtool cannot write stale markers.",
+ "templating": {
+  "list": [
+   {
+    "name": "source",
+    "type": "query",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "env2prom"
+    },
+    "query": {
+     "query": "label_values(ALERTS_HISTORY, source)",
+     "refId": "v1"
+    },
+    "definition": "label_values(ALERTS_HISTORY, source)",
+    "refresh": 1,
+    "includeAll": true,
+    "multi": true,
+    "current": {
+     "text": "All",
+     "value": "$__all"
+    },
+    "allValue": ".+"
+   },
+   {
+    "name": "alertname",
+    "type": "query",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "env2prom"
+    },
+    "query": {
+     "query": "label_values(ALERTS_HISTORY{source=~\"$source\"}, alertname)",
+     "refId": "v2"
+    },
+    "definition": "label_values(ALERTS_HISTORY{source=~\"$source\"}, alertname)",
+    "refresh": 2,
+    "includeAll": true,
+    "multi": true,
+    "sort": 1,
+    "current": {
+     "text": "All",
+     "value": "$__all"
+    },
+    "allValue": ".+"
+   }
+  ]
+ },
+ "panels": [
+  {
+   "id": 1,
+   "type": "state-timeline",
+   "title": "Worst state per alert rule",
+   "description": "One row per alertname. Colour = most severe state of any instance at that time: alerting > error > nodata > recovering > pending. Normal is empty. A bucket shows a state only if it was active at the bucket's evaluation instant, so very short intervals can disappear when zoomed out.",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "env2prom"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 22
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "env2prom"
+     },
+     "expr": "max by (alertname) (\n  (ALERTS_HISTORY{source=~\"$source\", alertname=~\"$alertname\", grafana_alertstate=\"pending\"} == 1) * 0 + 1\n  or (ALERTS_HISTORY{source=~\"$source\", alertname=~\"$alertname\", grafana_alertstate=\"recovering\"} == 1) * 0 + 2\n  or (ALERTS_HISTORY{source=~\"$source\", alertname=~\"$alertname\", grafana_alertstate=\"nodata\"} == 1) * 0 + 3\n  or (ALERTS_HISTORY{source=~\"$source\", alertname=~\"$alertname\", grafana_alertstate=\"error\"} == 1) * 0 + 4\n  or (ALERTS_HISTORY{source=~\"$source\", alertname=~\"$alertname\", grafana_alertstate=\"alerting\"} == 1) * 0 + 5\n)",
+     "legendFormat": "{{alertname}}",
+     "range": true,
+     "instant": false
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "color": {
+      "mode": "thresholds",
+      "fixedColor": "red"
+     },
+     "mappings": [
+      {
+       "type": "value",
+       "options": {
+        "1": {
+         "text": "pending",
+         "color": "yellow",
+         "index": 0
+        }
+       }
+      },
+      {
+       "type": "value",
+       "options": {
+        "2": {
+         "text": "recovering",
+         "color": "orange",
+         "index": 1
+        }
+       }
+      },
+      {
+       "type": "value",
+       "options": {
+        "3": {
+         "text": "nodata",
+         "color": "blue",
+         "index": 2
+        }
+       }
+      },
+      {
+       "type": "value",
+       "options": {
+        "4": {
+         "text": "error",
+         "color": "purple",
+         "index": 3
+        }
+       }
+      },
+      {
+       "type": "value",
+       "options": {
+        "5": {
+         "text": "alerting",
+         "color": "red",
+         "index": 4
+        }
+       }
+      }
+     ],
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "red",
+        "value": null
+       }
+      ]
+     },
+     "custom": {
+      "fillOpacity": 80,
+      "lineWidth": 0
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "showValue": "never",
+    "mergeValues": true,
+    "rowHeight": 0.85,
+    "alignValue": "left",
+    "legend": {
+     "showLegend": true,
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "single"
+    }
+   },
+   "interval": "1m",
+   "maxDataPoints": 1500
+  },
+  {
+   "id": 2,
+   "type": "timeseries",
+   "title": "Active instances per rule and state",
+   "description": "",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "env2prom"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 22,
+    "w": 24,
+    "h": 10
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "env2prom"
+     },
+     "expr": "count by (alertname, grafana_alertstate) (ALERTS_HISTORY{source=~\"$source\", alertname=~\"$alertname\"} == 1)",
+     "legendFormat": "{{alertname}} / {{grafana_alertstate}}",
+     "range": true,
+     "instant": false
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "drawStyle": "line",
+      "lineInterpolation": "stepAfter",
+      "fillOpacity": 10,
+      "showPoints": "never"
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "showLegend": true,
+     "displayMode": "table",
+     "placement": "right",
+     "calcs": [
+      "max"
+     ]
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   },
+   "interval": "1m",
+   "maxDataPoints": 1500
+  },
+  {
+   "id": 10,
+   "type": "row",
+   "title": "Per instance (expand after choosing alertname)",
+   "collapsed": true,
+   "gridPos": {
+    "x": 0,
+    "y": 32,
+    "w": 24,
+    "h": 1
+   },
+   "panels": [
+    {
+     "id": 3,
+     "type": "state-timeline",
+     "title": "Instances (pick one or a few alertname values above)",
+     "description": "One row per instance and state. With All selected this can be thousands of rows; choose alertname values first.",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "env2prom"
+     },
+     "gridPos": {
+      "x": 0,
+      "y": 33,
+      "w": 24,
+      "h": 16
+     },
+     "targets": [
+      {
+       "refId": "A",
+       "datasource": {
+        "type": "prometheus",
+        "uid": "env2prom"
+       },
+       "expr": "ALERTS_HISTORY{source=~\"$source\", alertname=~\"$alertname\"} == 1",
+       "legendFormat": "{{alertname}} {{grafana_alertstate}} {{instance}}{{uri}}{{kubernetes_pod_name}}",
+       "range": true,
+       "instant": false
+      }
+     ],
+     "fieldConfig": {
+      "defaults": {
+       "color": {
+        "mode": "fixed",
+        "fixedColor": "red"
+       },
+       "mappings": [],
+       "thresholds": {
+        "mode": "absolute",
+        "steps": [
+         {
+          "color": "red",
+          "value": null
+         }
+        ]
+       },
+       "custom": {
+        "fillOpacity": 80,
+        "lineWidth": 0
+       }
+      },
+      "overrides": []
+     },
+     "options": {
+      "showValue": "never",
+      "mergeValues": true,
+      "rowHeight": 0.85,
+      "alignValue": "left",
+      "legend": {
+       "showLegend": false,
+       "displayMode": "list",
+       "placement": "bottom"
+      },
+      "tooltip": {
+       "mode": "single"
+      }
+     },
+     "interval": "1m",
+     "maxDataPoints": 1500
+    }
+   ]
+  }
+ ]
+}

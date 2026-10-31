@@ -1,0 +1,43 @@
+# Lab: env1 = Grafana 12.0.0 (source of alert state history, annotations backend)
+#      env2 = Prometheus v3.5.0 (target), plus Grafana 12.1.1 demoing the
+#             "prometheus" state-history backend for going-forward capture.
+name: ahlab
+services:
+  env1-grafana:
+    image: grafana/grafana:12.0.0
+    ports: ["23000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: labadmin
+      GF_UNIFIED_ALERTING_STATE_HISTORY_ENABLED: "true"
+      GF_UNIFIED_ALERTING_STATE_HISTORY_BACKEND: annotations
+      GF_LOG_LEVEL: info
+    volumes:
+      - ./env1/provisioning:/etc/grafana/provisioning:ro
+      - env1-data:/var/lib/grafana
+  env2-prometheus:
+    image: prom/prometheus:v3.5.0
+    ports: ["29090:9090"]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-remote-write-receiver
+      - --web.enable-admin-api
+    volumes:
+      - ./env2/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - env2-data:/prometheus
+  env2-grafana:
+    image: grafana/grafana:12.1.1
+    ports: ["23001:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: labadmin
+      GF_UNIFIED_ALERTING_STATE_HISTORY_ENABLED: "true"
+      GF_UNIFIED_ALERTING_STATE_HISTORY_BACKEND: multiple
+      GF_UNIFIED_ALERTING_STATE_HISTORY_PRIMARY: annotations
+      GF_UNIFIED_ALERTING_STATE_HISTORY_SECONDARIES: prometheus
+      GF_UNIFIED_ALERTING_STATE_HISTORY_PROMETHEUS_TARGET_DATASOURCE_UID: env2prom
+    volumes:
+      - ./env2-grafana/provisioning:/etc/grafana/provisioning:ro
+volumes:
+  env1-data:
+  env2-data:

@@ -1,0 +1,1 @@
+lab torn down 2026-10-31T08:05:02Z: docker compose down -v (containers, network, volumes removed)

@@ -1,0 +1,18 @@
+# Does Grafana 12.0.0 accept [unified_alerting.state_history] backend = prometheus ?
+$ docker run -d --name ahlab-g120-promtest -e GF_UNIFIED_ALERTING_STATE_HISTORY_BACKEND=prometheus grafana/grafana:12.0.0
+$ docker logs ahlab-g120-promtest 2>&1 | grep -i unrecognized
+Error: ✗ unrecognized state history backend: prometheus
+$ docker ps -a --filter name=ahlab-g120-promtest --format '{{.Status}}'
+Exited (1) 3 seconds ago
+
+Result: Grafana 12.0.0 exits at startup (it does not ignore the setting).
+Matches source: v12.0.0 pkg/services/ngalert/state/historian/backend.go has no BackendTypePrometheus.
+
+# Grafana 12.1.1 with backend=multiple, primary=annotations, secondaries=prometheus (lab env2-grafana)
+First attempt failed for an unrelated lab reason (two datasources with isDefault: true ->
+"Datasource provisioning error ... Only one datasource per organization can be marked as default").
+After the fix, env2 Prometheus receives GRAFANA_ALERTS via remote write:
+$ curl -s 'localhost:29090/api/v1/query?query=GRAFANA_ALERTS' | jq -c '.data.result[]|[.metric,.value]'
+[{"__name__":"GRAFANA_ALERTS","alertname":"Lab Error","alertstate":"firing","grafana_alertstate":"error","grafana_folder":"Lab","grafana_rule_uid":"lab-error"},[1793432534.395,"1"]]
+[{"__name__":"GRAFANA_ALERTS","alertname":"Lab NoData","alertstate":"firing","datasource_uid":"testdata","grafana_alertstate":"nodata","grafana_folder":"Lab","grafana_rule_uid":"lab-nodata","ref_id":"A"},[1793432534.395,"1"]]
+(Datasource has jsonData.prometheusType: Prometheus and Prometheus runs with --web.enable-remote-write-receiver.)

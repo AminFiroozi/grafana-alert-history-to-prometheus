@@ -1,0 +1,6 @@
+$ docker compose stop env1-grafana; docker cp ahlab-env1-grafana-1:/var/lib/grafana/grafana.db .
+ Container ahlab-env1-grafana-1 Stopped 
+$ python3 lab/shift_old_annotations.py grafana.db 10 6 30   # copy first 10 min of real history to -6h and -30h
+shift -6.0h: inserted 115 rows (source window 1793432340000..1793432940000)
+shift -30.0h: inserted 115 rows (source window 1793432340000..1793432940000)
+ Container ahlab-env1-grafana-1 Started 

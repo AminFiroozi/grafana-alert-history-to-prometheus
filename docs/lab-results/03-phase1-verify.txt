@@ -1,0 +1,30 @@
+$ python3 tool/gah2prom.py verify -i lab-results/dump-1.json --prometheus http://localhost:29090
+{
+ "source_annotations": 183,
+ "source_events": 198,
+ "source_interval_starts": 100,
+ "source_interval_ends": 98,
+ "source_leading_starts_at_from": 0,
+ "prometheus_series": 9,
+ "prometheus_samples_read": 427,
+ "reconstructed_events": 198,
+ "matched": 198,
+ "missing_in_prometheus": 0,
+ "unexpected_in_prometheus": 0
+}
+exit=0
+
+$ promql: count(count by (__name__,alertname,alertstate,grafana_alertstate,host,grafana_rule_uid)(last_over_time(ALERTS_HISTORY{source="grafana-env1"}[1h])))
+[{},null]
+$ promql: count by (alertname, grafana_alertstate) (last_over_time(ALERTS_HISTORY{source="grafana-env1"}[1h]))
+[{"alertname":"Lab Error","grafana_alertstate":"error"},null]
+[{"alertname":"Lab NoData","grafana_alertstate":"nodata"},null]
+[{"alertname":"Lab Pulse","grafana_alertstate":"alerting"},null]
+[{"alertname":"Lab Walk Multi","grafana_alertstate":"alerting"},null]
+[{"alertname":"Lab Walk Multi","grafana_alertstate":"pending"},null]
+$ promql: sum by (alertname, grafana_alertstate) (count_over_time((ALERTS_HISTORY{source="grafana-env1"} == 1)[1h:]))
+[{"alertname":"Lab NoData","grafana_alertstate":"nodata"},null]
+[{"alertname":"Lab Pulse","grafana_alertstate":"alerting"},null]
+[{"alertname":"Lab Walk Multi","grafana_alertstate":"pending"},null]
+[{"alertname":"Lab Walk Multi","grafana_alertstate":"alerting"},null]
+[{"alertname":"Lab Error","grafana_alertstate":"error"},null]

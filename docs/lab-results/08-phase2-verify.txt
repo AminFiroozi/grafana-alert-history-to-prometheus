@@ -1,0 +1,26 @@
+$ blocks after reload/compaction
+[1793433579.052,"6"]
+[1793433579.074,"6"]
+[1793433579.090,"1"]
+01M68FEATTJQ93RAS0V55GFZW8 
+01M68FEAW1T9HSZYX833KRQVYR 
+01M68FEAXFS63S3RM1WHGP91YC 
+01M68FFVAPPYH9WSZ3N4WVW08J 
+01M68FFVBSCMJD3RFPAGAFCYQW 
+01M68FFVEFYKKT823QCBVV21PS 
+
+$ python3 tool/gah2prom.py verify -i lab-results/dump-2.json --prometheus http://localhost:29090
+{
+ "source_annotations": 445,
+ "source_events": 473,
+ "source_interval_starts": 238,
+ "source_interval_ends": 235,
+ "source_leading_starts_at_from": 0,
+ "prometheus_series": 9,
+ "prometheus_samples_read": 29519,
+ "reconstructed_events": 473,
+ "matched": 473,
+ "missing_in_prometheus": 0,
+ "unexpected_in_prometheus": 0
+}
+exit=0

@@ -1,0 +1,45 @@
+# Phase 4: retention. Fresh Prometheus v3.5.0 with --storage.tsdb.retention.time=24h, same 16 blocks from phase 2.
+$ docker run -d --name ahlab-prom-ret -p 29091:9090 prom/prometheus:v3.5.0 --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=24h
+copied 16 blocks; newest block maxTime=1793433470001; expected cutoff: delete blocks with maxTime <= 1793433470001 - 86400000 = 1793347070001
+$ docker exec ahlab-prom-ret promtool tsdb list /prometheus
+BLOCK ULID                  MIN TIME       MAX TIME       DURATION      NUM SAMPLES  NUM CHUNKS   NUM SERIES   SIZE
+01M68FEAFFHF5WCH0SXN9NPBB7  1793340000000  1793347185001  1h59m45.001s  1920         16           4            3253
+01M68FEAGRH12Z8GP2G491JB3E  1793347200000  1793354385001  1h59m45.001s  1920         16           4            3253
+01M68FEAHYXJ4B416G50HZZ7H3  1793354400000  1793361585001  1h59m45.001s  1920         16           4            3253
+01M68FEAK60JMDQMNRANZFF7YB  1793361600000  1793368785001  1h59m45.001s  1920         16           4            3253
+01M68FEAMF9WP7FAB1J50EDDZK  1793368800000  1793375985001  1h59m45.001s  1920         16           4            3253
+01M68FEANPFDDY0C59MD0VHWWF  1793376000000  1793383185001  1h59m45.001s  1920         16           4            3253
+01M68FEAPXQT0W3DMDQ9PTQAR2  1793383200000  1793390385001  1h59m45.001s  1920         16           4            3253
+01M68FEAR612H5TFYV7APT82RT  1793390400000  1793397585001  1h59m45.001s  1920         16           4            3253
+01M68FEASGWE0Y5G8Y9YWE553G  1793397600000  1793404785001  1h59m45.001s  1920         16           4            3253
+01M68FEATTJQ93RAS0V55GFZW8  1793404800000  1793411985001  1h59m45.001s  2026         21           9            4456
+01M68FEAW1T9HSZYX833KRQVYR  1793412000000  1793419185001  1h59m45.001s  1920         16           4            3253
+01M68FEAXFS63S3RM1WHGP91YC  1793419200000  1793426385001  1h59m45.001s  1920         16           4            3253
+01M68FEB01MJ3ZMEDDXJ1FE15H  1793426400000  1793433470001  1h57m50.001s  2092         21           9            4928
+"prometheus_tsdb_time_retentions_total=1"
+time=2026-10-31T08:03:22.303Z level=INFO source=db.go:1814 msg="Deleting obsolete block" component=tsdb block=01M68FEAB4NNAAXYRCASFX3AN2
+time=2026-10-31T08:03:22.304Z level=INFO source=db.go:1814 msg="Deleting obsolete block" component=tsdb block=01M68FEAE02ZYZGGG6SM5SSDST
+time=2026-10-31T08:03:22.306Z level=INFO source=db.go:1814 msg="Deleting obsolete block" component=tsdb block=01M68FEACAV1NS05M21XQJP00V
+$ promql: min sample time still present
+[]
+"series with samples in the hour before 1793330000 (inside deleted range): []"
+$ python3 tool/gah2prom.py verify -i lab-results/dump-2.json --prometheus http://localhost:29091   # mismatches expected for the deleted range
+{
+ "source_annotations": 445,
+ "source_events": 473,
+ "source_interval_starts": 238,
+ "source_interval_ends": 235,
+ "source_leading_starts_at_from": 0,
+ "prometheus_series": 9,
+ "prometheus_samples_read": 25238,
+ "reconstructed_events": 355,
+ "matched": 351,
+ "missing_in_prometheus": 122,
+ "unexpected_in_prometheus": 4
+}
+MISSING 2026-10-30T01:39:00.000Z error {'alertname': 'Lab Error', 'grafana_folder': 'Lab', 'grafana_rule_uid': 'lab-error', 'source': 'grafana-env1'}
+MISSING 2026-10-30T01:39:00.000Z nodata {'alertname': 'Lab NoData', 'datasource_uid': 'testdata', 'grafana_folder': 'Lab', 'grafana_rule_uid': 'lab-nodata', 'ref_id': 'A', 'source': 'grafana-env1'}
+MISSING 2026-10-30T01:39:00.000Z alerting {'alertname': 'Lab Pulse', 'grafana_folder': 'Lab', 'grafana_rule_uid': 'lab-pulse', 'severity': 'warning', 'source': 'grafana-env1', 'team': 'sre'}
+Exception ignored on flushing sys.stdout:
+BrokenPipeError: [Errno 32] Broken pipe
+exit=120

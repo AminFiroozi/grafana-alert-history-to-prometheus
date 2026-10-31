@@ -1,0 +1,18 @@
+# Practice env1: Grafana 12.0.0, source of alert state history (annotations backend, SQLite).
+# Same as ../lab env1, separate compose project and port so both can coexist.
+name: ahpractice
+services:
+  env1-grafana:
+    image: grafana/grafana:12.0.0
+    ports: ["127.0.0.1:23100:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: labadmin
+      GF_UNIFIED_ALERTING_STATE_HISTORY_ENABLED: "true"
+      GF_UNIFIED_ALERTING_STATE_HISTORY_BACKEND: annotations
+      GF_LOG_LEVEL: info
+    volumes:
+      - ./env1/provisioning:/etc/grafana/provisioning:ro
+      - env1-data:/var/lib/grafana
+    restart: unless-stopped
+volumes:
+  env1-data:
