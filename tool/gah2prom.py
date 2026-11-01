@@ -97,16 +97,27 @@ def om_escape(v):
 
 
 class Http:
-    def __init__(self, base, token=None, user=None, password=None, insecure=False, org_id=None, timeout=60):
+    def __init__(self, base, token=None, user=None, password=None, insecure=False, org_id=None, timeout=60,
+                 ca_cert=None, extra_headers=None):
         self.base = base.rstrip("/")
         self.headers = {"Accept": "application/json"}
+        for h in extra_headers or []:
+            k, sep, v = h.partition(":")
+            if not sep or not k.strip():
+                raise SystemExit(f"bad --header {h!r}: expected 'Name: value'")
+            self.headers[k.strip()] = v.strip()
         if token:
             self.headers["Authorization"] = "Bearer " + token
         elif user:
             self.headers["Authorization"] = "Basic " + base64.b64encode(f"{user}:{password or ''}".encode()).decode()
         if org_id:
             self.headers["X-Grafana-Org-Id"] = str(org_id)
-        self.ctx = ssl._create_unverified_context() if insecure else None
+        if insecure:
+            self.ctx = ssl._create_unverified_context()
+        elif ca_cert:
+            self.ctx = ssl.create_default_context(cafile=ca_cert)
+        else:
+            self.ctx = None
         self.timeout = timeout
 
     def get(self, path, params=None):
@@ -170,8 +181,15 @@ def fetch_annotations(http, frm, to, limit):
     return [out[k] for k in sorted(out)]
 
 
+def env_headers(var):
+    """Extra headers from an environment variable, one 'Name: value' per line (keeps secrets off the command line)."""
+    return [h for h in os.environ.get(var, "").splitlines() if h.strip()]
+
+
 def cmd_export(a):
-    http = Http(a.url, a.token, a.user, a.password, a.insecure, a.org_id)
+    http = Http(a.url, a.token or os.environ.get("GAH_TOKEN"), a.user or os.environ.get("GAH_USER"),
+                a.password or os.environ.get("GAH_PASSWORD"), a.insecure, a.org_id,
+                ca_cert=a.ca_cert, extra_headers=env_headers("GAH_HEADERS") + a.header)
     frm, to = parse_time(a.frm), parse_time(a.to)
     rules = fetch_rules(http)
     log(f"rules: {len(rules)}")
@@ -470,9 +488,15 @@ def cmd_verify(a):
     dump = json.load(open(a.input))
     until = parse_time(a.until) if a.until else None
     src, leading_n = source_transitions(dump, a.source, a.source_label, a.leading, until, a.deleted_rule_end)
-    prom = Http(a.prometheus, insecure=a.insecure)
+    prom = Http(a.prometheus, a.prom_token or os.environ.get("GAH_PROM_TOKEN"),
+                a.prom_user or os.environ.get("GAH_PROM_USER"),
+                a.prom_password or os.environ.get("GAH_PROM_PASSWORD"), a.insecure,
+                ca_cert=a.ca_cert, extra_headers=env_headers("GAH_PROM_HEADERS") + a.header)
     to = min(dump["to"], until) if until else dump["to"]
     got, nseries, nsamples = prom_transitions(prom, a.metric, a.source, a.source_label, dump["from"] - 86400000, to)
+    if a.extra_label:  # convert --extra-label adds these labels to every series
+        extra = dict(a.extra_label)
+        src = {(tuple(sorted({**dict(k), **extra}.items())), ts, st) for k, ts, st in src}
     missing = sorted(src - got, key=lambda x: (x[1], x[0]))
     extra = sorted(got - src, key=lambda x: (x[1], x[0]))
     starts = sum(1 for x in src if not x[2].startswith("end:"))
@@ -503,9 +527,12 @@ def main():
 
     e = sub.add_parser("export", help="export state history from Grafana")
     e.add_argument("--url", required=True, help="Grafana base URL, e.g. https://grafana.example")
-    e.add_argument("--token", help="service account token (Bearer)")
-    e.add_argument("--user")
-    e.add_argument("--password")
+    e.add_argument("--token", help="service account token (Bearer); default: env GAH_TOKEN")
+    e.add_argument("--user", help="basic auth user; default: env GAH_USER")
+    e.add_argument("--password", help="basic auth password; default: env GAH_PASSWORD")
+    e.add_argument("--ca-cert", help="CA bundle (PEM) to verify the server certificate")
+    e.add_argument("--header", action="append", default=[], metavar="'Name: value'",
+                   help="extra HTTP header, repeatable (more can come from env GAH_HEADERS, one per line)")
     e.add_argument("--org-id", type=int)
     e.add_argument("--insecure", action="store_true", help="skip TLS verification")
     e.add_argument("--from", dest="frm", default="1", help="epoch ms/s, RFC3339 UTC, now-30d (default: 1 = everything)")
@@ -538,8 +565,16 @@ def main():
     c.set_defaults(fn=cmd_convert)
 
     v = sub.add_parser("verify", parents=[common], help="diff dump transitions vs Prometheus")
-    v.add_argument("--prometheus", required=True, help="env2 Prometheus base URL")
-    v.add_argument("--insecure", action="store_true")
+    v.add_argument("--prometheus", required=True, help="env2 Prometheus base URL (may include a path prefix)")
+    v.add_argument("--insecure", action="store_true", help="skip TLS verification of Prometheus")
+    v.add_argument("--prom-token", help="Prometheus Bearer token; default: env GAH_PROM_TOKEN")
+    v.add_argument("--prom-user", help="Prometheus basic auth user; default: env GAH_PROM_USER")
+    v.add_argument("--prom-password", help="Prometheus basic auth password; default: env GAH_PROM_PASSWORD")
+    v.add_argument("--ca-cert", help="CA bundle (PEM) to verify the Prometheus certificate")
+    v.add_argument("--header", action="append", default=[], metavar="'Name: value'",
+                   help="extra HTTP header, repeatable (more can come from env GAH_PROM_HEADERS, one per line)")
+    v.add_argument("--extra-label", action="append", default=[], type=lambda s: tuple(s.split("=", 1)),
+                   metavar="K=V", help="same value(s) as given to convert")
     v.set_defaults(fn=cmd_verify)
 
     a = p.parse_args()

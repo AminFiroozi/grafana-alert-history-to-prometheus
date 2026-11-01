@@ -96,7 +96,7 @@ python3 tool/gah2prom.py verify -i work/dump-git.json --prometheus http://127.0.
   --source grafana-git-history --deleted-rule-end last-event
 ```
 
-Disk: step 2 writes about 10 GB of OpenMetrics text; the blocks are about
+Disk: step 2 writes about 29 GB of OpenMetrics text (check free disk first); the blocks are about
 60 MB. Delete `work/om` afterwards.
 
 Practice ideas: import the same blocks twice and verify again (duplicates are
